@@ -14,9 +14,19 @@ product_header = ["product_page_url",
                   "review_rating",
                   "image_url"]
 
-
+categories_list = []
 products = []
+category_url_start_frame = "http://books.toscrape.com/catalogue/category/books/"
+home_url = "http://books.toscrape.com/index.html"
 category_page_url = "http://books.toscrape.com/catalogue/category/books/fantasy_19/page-1.html"
+
+
+def get_all_categories():
+    home_page = requests.get(home_url).content
+    home_html = BeautifulSoup(home_page, "html.parser")
+    all_categories_a = home_html.find("div", class_="side_categories").findAll("a")
+    for category in all_categories_a[1:]:
+        categories_list.append(category["href"].split("/")[3])
 
 
 def get_product_information(product_url):
@@ -63,16 +73,18 @@ def get_products_info_for_one_category(products_url):
         products.append(product_info)
 
 
-get_products_info_for_one_category(get_products_url_for_one_category(category_page_url))
 
 
-with open("products.csv", "w") as f:
-    writer = csv.writer(f, delimiter=",")
-    writer.writerow(product_header)
-for product in products:
-    with open("products.csv", "a") as f:
-        writer = csv.writer(f, delimiter=",")
-        if products[0]:
-                writer.writerow(product)
-        else:
-            print("There's no product!")
+# get_products_info_for_one_category(get_products_url_for_one_category(category_page_url))
+#
+#
+# with open("products.csv", "w") as f:
+#     writer = csv.writer(f, delimiter=",")
+#     writer.writerow(product_header)
+# for product in products:
+#     with open("products.csv", "a") as f:
+#         writer = csv.writer(f, delimiter=",")
+#         if products[0]:
+#                 writer.writerow(product)
+#         else:
+#             print("There's no product!")
