@@ -36,7 +36,7 @@ def get_product_information(product_url):
     product.append(product_html.find("ul", class_="breadcrumb").findAll("a")[2].string)
     product.append(product_html.find("p", class_="star-rating")["class"][1])
     product.append(product_html.find("div", class_="item active").find("img")["src"])
-    products.append(product)
+    return product
 
 
 def get_products_url_for_one_category_page(category_page_url):
@@ -51,13 +51,24 @@ def get_products_url_for_one_category_page(category_page_url):
         products_final_url_list.append("http://books.toscrape.com/catalogue/" + product)
     return products_final_url_list
 
-print(get_products_url_for_one_category_page(category_page_url))
+
+def get_products_info_for_one_category_page(products_url):
+    for product_url in products_url:
+        product_info = get_product_information(product_url)
+        products.append(product_info)
 
 
+get_products_info_for_one_category_page(get_products_url_for_one_category_page(category_page_url))
 
-# with open("products.csv", "w") as f:
-#     writer = csv.writer(f, delimiter=",")
-#     writer.writerow(product_header)
-#     if products[0]:
-#         for product in products:
-#             writer.writerow(product)
+
+with open("products.csv", "w") as f:
+    writer = csv.writer(f, delimiter=",")
+    writer.writerow(product_header)
+print(products)
+for product in products:
+    with open("products.csv", "a") as f:
+        writer = csv.writer(f, delimiter=",")
+        if products[0]:
+                writer.writerow(product)
+        else:
+            print("There's no product!")
