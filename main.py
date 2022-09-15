@@ -15,10 +15,8 @@ product_header = ["product_page_url",
                   "image_url"]
 
 categories_list = []
-products = []
 category_url_start_frame = "http://books.toscrape.com/catalogue/category/books/"
 home_url = "http://books.toscrape.com/index.html"
-category_page_url = "http://books.toscrape.com/catalogue/category/books/fantasy_19/page-1.html"
 
 
 def get_all_categories():
@@ -30,6 +28,7 @@ def get_all_categories():
 
 
 def get_product_information(product_url):
+    print("step 2")
     product = []
     product_page = requests.get(product_url).content
     product_html = BeautifulSoup(product_page, "html.parser")
@@ -47,10 +46,9 @@ def get_product_information(product_url):
     return product
 
 
-products_final_url_list = []
-
-
 def get_products_url_for_one_category(category_page_url):
+    print("step 3")
+    products_final_url_list = []
     category_page = requests.get(category_page_url).content
     category_html = BeautifulSoup(category_page, "html.parser")
     products_url = category_html.findAll("div", class_="image_container")
@@ -60,23 +58,36 @@ def get_products_url_for_one_category(category_page_url):
     for product in products_list_url:
         products_final_url_list.append("http://books.toscrape.com/catalogue/" + product)
     if category_html.find("li", class_="next"):
-        first_part_category_url = category_page_url.split("/page-")[0]
-        next_category_index_page = int(category_page_url.split("/page-")[1].split(".html")[0]) + 1
-        next_category_url = first_part_category_url + "/page-" + f"{next_category_index_page}" + ".html"
+        if not category_html.find("li", class_="previous"):
+            next_category_url = category_url_start_frame + "/page-2.html"
+        else:
+            next_category_index_page = int(category_page_url.split("/page-")[1].split(".html")[0]) + 1
+            next_category_url = category_url_start_frame + "/page-" + f"{next_category_index_page}" + ".html"
         get_products_url_for_one_category(next_category_url)
     return products_final_url_list
 
 
 def get_products_info_for_one_category(products_url):
+    print("step 1")
+    products = []
     for product_url in products_url:
         product_info = get_product_information(product_url)
         products.append(product_info)
+    return products
 
 
+def get_all_products_info():
+    print("step 0")
+    all_products = []
+    for category in categories_list:
+        category_url = category_url_start_frame + category + "/index.html"
+        all_products.append({category: get_products_info_for_one_category(get_products_url_for_one_category(category_url))})
+    return all_products
+
+get_all_categories()
+print(get_all_products_info())
 
 
-# get_products_info_for_one_category(get_products_url_for_one_category(category_page_url))
-#
 #
 # with open("products.csv", "w") as f:
 #     writer = csv.writer(f, delimiter=",")
