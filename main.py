@@ -16,9 +16,7 @@ product_header = ["product_page_url",
 
 
 products = []
-# product_url = "http://books.toscrape.com/catalogue/eragon-the-inheritance-cycle-1_153/index.html"
-# category_page_url = "http://books.toscrape.com/catalogue/category/books/fantasy_19/page-" + i + ".html"
-category_page_url = "http://books.toscrape.com/catalogue/category/books/fantasy_19/page-2.html"
+category_page_url = "http://books.toscrape.com/catalogue/category/books/fantasy_19/page-1.html"
 
 
 def get_product_information(product_url):
@@ -39,32 +37,38 @@ def get_product_information(product_url):
     return product
 
 
-def get_products_url_for_one_category_page(category_page_url):
+products_final_url_list = []
+
+
+def get_products_url_for_one_category(category_page_url):
     category_page = requests.get(category_page_url).content
     category_html = BeautifulSoup(category_page, "html.parser")
     products_url = category_html.findAll("div", class_="image_container")
     products_list_url = []
-    products_final_url_list = []
     for product in products_url:
         products_list_url.append(product.a["href"].split("../")[-1])
     for product in products_list_url:
         products_final_url_list.append("http://books.toscrape.com/catalogue/" + product)
+    if category_html.find("li", class_="next"):
+        first_part_category_url = category_page_url.split("/page-")[0]
+        next_category_index_page = int(category_page_url.split("/page-")[1].split(".html")[0]) + 1
+        next_category_url = first_part_category_url + "/page-" + f"{next_category_index_page}" + ".html"
+        get_products_url_for_one_category(next_category_url)
     return products_final_url_list
 
 
-def get_products_info_for_one_category_page(products_url):
+def get_products_info_for_one_category(products_url):
     for product_url in products_url:
         product_info = get_product_information(product_url)
         products.append(product_info)
 
 
-get_products_info_for_one_category_page(get_products_url_for_one_category_page(category_page_url))
+get_products_info_for_one_category(get_products_url_for_one_category(category_page_url))
 
 
 with open("products.csv", "w") as f:
     writer = csv.writer(f, delimiter=",")
     writer.writerow(product_header)
-print(products)
 for product in products:
     with open("products.csv", "a") as f:
         writer = csv.writer(f, delimiter=",")
