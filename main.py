@@ -15,6 +15,7 @@ product_header = ["product_page_url",
                   "image_url"]
 
 categories_list = []
+products_final_url_list = []
 category_url_start_frame = "http://books.toscrape.com/catalogue/category/books/"
 home_url = "http://books.toscrape.com/index.html"
 
@@ -28,7 +29,8 @@ def get_all_categories():
 
 
 def get_product_information(product_url):
-    print("step 2")
+    print("step 3")
+    print(product_url)
     product = []
     product_page = requests.get(product_url).content
     product_html = BeautifulSoup(product_page, "html.parser")
@@ -46,9 +48,9 @@ def get_product_information(product_url):
     return product
 
 
-def get_products_url_for_one_category(category_page_url):
-    print("step 3")
-    products_final_url_list = []
+def get_products_url_for_one_category(category_page_url, category):
+    print("step 1")
+    print(category_page_url)
     category_page = requests.get(category_page_url).content
     category_html = BeautifulSoup(category_page, "html.parser")
     products_url = category_html.findAll("div", class_="image_container")
@@ -59,17 +61,19 @@ def get_products_url_for_one_category(category_page_url):
         products_final_url_list.append("http://books.toscrape.com/catalogue/" + product)
     if category_html.find("li", class_="next"):
         if not category_html.find("li", class_="previous"):
-            next_category_url = category_url_start_frame + "/page-2.html"
+            next_category_url = category_url_start_frame + category + "/page-2.html"
         else:
             next_category_index_page = int(category_page_url.split("/page-")[1].split(".html")[0]) + 1
-            next_category_url = category_url_start_frame + "/page-" + f"{next_category_index_page}" + ".html"
-        get_products_url_for_one_category(next_category_url)
+            next_category_url = category_url_start_frame + category + "/page-" + f"{next_category_index_page}" + ".html"
+        get_products_url_for_one_category(next_category_url, category)
     return products_final_url_list
 
 
 def get_products_info_for_one_category(products_url):
-    print("step 1")
+    print("step 2")
+    print(products_url)
     products = []
+    products.append(product_header)
     for product_url in products_url:
         product_info = get_product_information(product_url)
         products.append(product_info)
@@ -78,24 +82,25 @@ def get_products_info_for_one_category(products_url):
 
 def get_all_products_info():
     print("step 0")
+    get_all_categories()
     all_products = []
     for category in categories_list:
         category_url = category_url_start_frame + category + "/index.html"
-        all_products.append({category: get_products_info_for_one_category(get_products_url_for_one_category(category_url))})
+        all_products.append({"category": category, "products_list": get_products_info_for_one_category(get_products_url_for_one_category(category_url, category))})
+        products_final_url_list.clear()
     return all_products
 
-get_all_categories()
-print(get_all_products_info())
+
+def create_csv_files():
+    for category in get_all_products_info():
+        print(category)
+        with open(f"{category['category']}.csv", "w") as f:
+            writer = csv.writer(f, delimiter=";")
+            if category["products_list"][0]:
+                for product in category["products_list"]:
+                    writer.writerow(product)
+            else:
+                print("There's no product in this category!")
 
 
-#
-# with open("products.csv", "w") as f:
-#     writer = csv.writer(f, delimiter=",")
-#     writer.writerow(product_header)
-# for product in products:
-#     with open("products.csv", "a") as f:
-#         writer = csv.writer(f, delimiter=",")
-#         if products[0]:
-#                 writer.writerow(product)
-#         else:
-#             print("There's no product!")
+create_csv_files()
