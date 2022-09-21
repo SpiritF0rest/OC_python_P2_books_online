@@ -2,4 +2,7 @@
 /venv
 
 # Data files
-*.csv
+/Csv
+
+# Images
+/Images
