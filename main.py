@@ -8,12 +8,29 @@ import requests
 
 
 def get_all_categories(home_url):
+    """Retrieve HTML anchors containing category URLs and names
+
+    Args:
+        home_url(str): Home page URL
+
+    Returns:
+        list: List of categories anchors (HTML)
+    """
     home_page = requests.get(home_url).content
     home_html = BeautifulSoup(home_page, "html.parser")
     return home_html.find("div", class_="side_categories").findAll("a")
 
 
 def transform_categories_data_to_dict(all_categories_data, home_url):
+    """Build dict for each category with name and URL and add them in a list
+
+    Args:
+        all_categories_data(list): List of categories anchors (html)
+        home_url(str): Home page URL
+
+    Returns:
+        list: List of all categories dict with name and URL
+    """
     categories_list = []
     for category in all_categories_data[1:]:
         categories_list.append({
@@ -23,6 +40,14 @@ def transform_categories_data_to_dict(all_categories_data, home_url):
 
 
 def get_product_information(product_url):
+    """Retrieve information for a product (via HTML) and inserts it into a dict
+
+    Args:
+        product_url(str): Product page URL
+
+    Returns:
+        dict: Product dictionary
+    """
     print("Step 3: get information of a product")
     product = {}
     product_page = requests.get(product_url).content
@@ -38,12 +63,24 @@ def get_product_information(product_url):
         product["number_available"] = 0
     product["product_description"] = product_html.find("article", class_="product_page").findAll("p")[3].string
     product["category"] = product_html.find("ul", class_="breadcrumb").findAll("a")[2].string
+    # w2n allows to transform the review rating's word into a number
     product["review_rating"] = w2n.word_to_num(product_html.find("p", class_="star-rating")["class"][1])
+    # urljoin allows to construct a full URL by combining a "base URL" with another URL
     product["image_url"] = urljoin(product_url, product_html.find("div", class_="item active").find("img")["src"])
     return product
 
 
 def get_products_url_for_one_category(category_page_url, category, products_final_url_list):
+    """Retrieve the url of the products (via the HTML of the pages) of the same category
+
+    Args:
+        category_page_url(str): URL of the category's page
+        category(str): Name of the category
+        products_final_url_list(list): List of all product URL for this category
+
+    Returns:
+        list: List of all product URL for this category
+    """
     print(f"Step 1: get products url of {category}")
     category_page = requests.get(category_page_url).content
     category_html = BeautifulSoup(category_page, "html.parser")
@@ -57,6 +94,14 @@ def get_products_url_for_one_category(category_page_url, category, products_fina
 
 
 def get_products_info_for_one_category(products_url):
+    """Use get_product_information() to retrieve the info of each product via the URL list of products in a category
+
+    Args:
+        products_url(list): URL list of all products in one category
+
+    Returns:
+        list: List of all products (with all info) for a category
+    """
     print("Step 2: get products info of category")
     products = []
     for product_url in products_url:
@@ -66,6 +111,14 @@ def get_products_info_for_one_category(products_url):
 
 
 def get_all_products_info(categories):
+    """Retrieve all information of all products of all categories
+
+    Args:
+        categories(list): List of all dict of categories
+
+    Returns:
+        list: List of dict containing each category name with all products for these categories
+    """
     print("Step 0: start get all products info process")
     all_products = []
     for category in categories:
@@ -78,6 +131,11 @@ def get_all_products_info(categories):
 
 
 def create_files_tree(categories):
+    """Create directories tree for csv and images files
+
+    Args:
+        categories(list): List of all dict of categories
+    """
     current_path = Path.cwd()
     directories = [os.path.join(current_path, "Csv"), os.path.join(current_path, "Images")]
     for directory in directories:
@@ -88,6 +146,11 @@ def create_files_tree(categories):
 
 
 def create_csv_files(all_products):
+    """Create csv files for each category, each file contains a header and all products info by category
+
+    Args:
+        all_products(list): List of dict containing each category name with its products list
+    """
     print("Step 4: create csv file")
     for category in all_products:
         with open(f"Csv/{category['category']}.csv", "w") as f:
@@ -100,6 +163,14 @@ def create_csv_files(all_products):
 
 
 def download_images_product(all_products):
+    """Download each image of all products by category and put them in the corresponding directories
+
+    Args:
+        all_products(list): List of dict containing each category name with its products list
+
+    Returns:
+
+    """
     for category in all_products:
         print(f"Step 5: download {category['category']} images")
         for product in category["products_list"]:
