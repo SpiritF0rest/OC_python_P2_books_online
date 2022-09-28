@@ -7,19 +7,23 @@ from word2number import w2n
 import requests
 
 
-def get_all_categories():
-    home_url = "http://books.toscrape.com/index.html"
-    categories_list = []
+def get_all_categories(home_url):
     home_page = requests.get(home_url).content
     home_html = BeautifulSoup(home_page, "html.parser")
-    all_categories_a = home_html.find("div", class_="side_categories").findAll("a")
-    for category in all_categories_a[1:]:
-        categories_list.append(category["href"].split("/")[3])
+    return home_html.find("div", class_="side_categories").findAll("a")
+
+
+def transform_categories_data_to_dict(all_categories_data, home_url):
+    categories_list = []
+    for category in all_categories_data[1:]:
+        categories_list.append({
+            "category_name": "_".join(category.string.strip().lower().split(" ")),
+            "category_url": urljoin(home_url, category["href"])})
     return categories_list
 
 
 def get_product_information(product_url):
-    print("step 3")
+    print("Step 3: get information of a product")
     product = {}
     product_page = requests.get(product_url).content
     product_html = BeautifulSoup(product_page, "html.parser")
@@ -40,16 +44,12 @@ def get_product_information(product_url):
 
 
 def get_products_url_for_one_category(category_page_url, category, products_final_url_list):
-    print("step 1")
-    print(category_page_url)
+    print(f"Step 1: get products url of {category}")
     category_page = requests.get(category_page_url).content
     category_html = BeautifulSoup(category_page, "html.parser")
     products_url = category_html.findAll("div", class_="image_container")
-    products_list_url = []
     for product in products_url:
-        products_list_url.append(product.a["href"].split("../")[-1])
-    for product in products_list_url:
-        products_final_url_list.append("http://books.toscrape.com/catalogue/" + product)
+        products_final_url_list.append(urljoin(category_page_url, product.a["href"]))
     if category_html.find("li", class_="next"):
         next_category_url = urljoin(category_page_url, category_html.find("li", class_="next").a["href"])
         get_products_url_for_one_category(next_category_url, category, products_final_url_list)
@@ -57,42 +57,40 @@ def get_products_url_for_one_category(category_page_url, category, products_fina
 
 
 def get_products_info_for_one_category(products_url):
-    print("step 2")
+    print("Step 2: get products info of category")
     products = []
-    # products.append(product_header)
     for product_url in products_url:
         product_info = get_product_information(product_url)
         products.append(product_info)
     return products
 
 
-def get_all_products_info():
-    print("step 0")
-    category_url_start_frame = "http://books.toscrape.com/catalogue/category/books/"
+def get_all_products_info(categories):
+    print("Step 0: start get all products info process")
     all_products = []
-    for category in get_all_categories():
+    for category in categories:
         products_final_url_list = []
-        category_url = category_url_start_frame + category + "/index.html"
         all_products.append({
-            "category": category,
-            "products_list": get_products_info_for_one_category(get_products_url_for_one_category(category_url, category, products_final_url_list))})
+            "category": category["category_name"],
+            "products_list": get_products_info_for_one_category(get_products_url_for_one_category(category["category_url"], category["category_name"], products_final_url_list))})
         products_final_url_list.clear()
     return all_products
 
 
-def create_files_tree():
+def create_files_tree(categories):
     current_path = Path.cwd()
     directories = [os.path.join(current_path, "Csv"), os.path.join(current_path, "Images")]
     for directory in directories:
         os.makedirs(directory, exist_ok=True)
-    for category in get_all_categories():
-        category_path = os.path.join(f"{current_path}/Images", category.split("_")[0])
+    for category in categories:
+        category_path = os.path.join(f"{current_path}/Images", category["category_name"])
         os.makedirs(category_path, exist_ok=True)
 
 
 def create_csv_files(all_products):
+    print("Step 4: create csv file")
     for category in all_products:
-        with open(f"Csv/{category['category'].split('_')[0]}.csv", "w") as f:
+        with open(f"Csv/{category['category']}.csv", "w") as f:
             if category["products_list"][0]:
                 writer = csv.DictWriter(f, fieldnames=category["products_list"][0], delimiter=";")
                 writer.writeheader()
@@ -103,15 +101,19 @@ def create_csv_files(all_products):
 
 def download_images_product(all_products):
     for category in all_products:
+        print(f"Step 5: download {category['category']} images")
         for product in category["products_list"]:
             image = requests.get(product["image_url"]).content
-            with open(f"Images/{category['category'].split('_')[0]}/{product['product_page_url'].split('/')[-2].split('_')[0]}.jpg", "wb") as f:
+            with open(f"Images/{category['category']}/{product['product_page_url'].split('/')[-2].split('_')[0]}.jpg", "wb") as f:
                 f.write(image)
 
 
 if __name__ == '__main__':
-    products = get_all_products_info()
-    create_files_tree()
+    home_url = "http://books.toscrape.com/index.html"
+    categories_data = get_all_categories(home_url)
+    categories = transform_categories_data_to_dict(categories_data, home_url)
+    products = get_all_products_info(categories)
+    create_files_tree(categories)
     create_csv_files(products)
     download_images_product(products)
 
