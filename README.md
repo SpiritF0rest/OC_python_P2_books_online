@@ -6,7 +6,6 @@ Python script to do scraping.
 1. [General Info](#general-info)
 2. [Technologies](#technologies)
 3. [Installation](#installation)
-4. [Admin Info](#admin-info)
 
 ### :newspaper: General Info :newspaper:
 ***
@@ -31,6 +30,7 @@ Native module:
 
 ### :wrench: Installation :wrench:
 ***
+In your directory for the project:
 
 Clone repository from : 
 - https://github.com/SpiritF0rest/OC_python_P2_books_online
@@ -39,15 +39,22 @@ Clone repository from :
 
 ```
 In terminal from cloned folder :
-$ python -m venv env
-
-To install
+$ python -m venv venv
 
 To active the virtual environment:
 $ source venv/bin/activate
+
+To install modules: 
+$ pip install -r requirements.txt
+
+To run the python script (2 possibilties):
+- in Pycharm : run main.py 
+- in Terminal : $ python3 main.py
 
 To deactive the virtual environment: 
 $ deactivate
 ```
 
 ***
+
+:snake: Enjoy :snake:
