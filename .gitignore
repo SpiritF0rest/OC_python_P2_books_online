@@ -6,3 +6,6 @@
 
 # Images
 /Images
+
+# Distribution / packaging
+.idea/
